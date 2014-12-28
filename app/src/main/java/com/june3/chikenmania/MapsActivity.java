@@ -1,8 +1,8 @@
 package com.june3.chikenmania;
 
 import android.location.Location;
-import android.support.v4.app.FragmentActivity;
 import android.os.Bundle;
+import android.support.v4.app.FragmentActivity;
 import android.util.Log;
 
 import com.google.android.gms.common.ConnectionResult;
@@ -14,6 +14,11 @@ import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
+
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 
 public class MapsActivity extends FragmentActivity implements
         GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener {
@@ -90,17 +95,13 @@ public class MapsActivity extends FragmentActivity implements
     @Override
     public void onConnected(Bundle connectionHint) {
         Log.e(TAG, "onConnected(" + connectionHint + ");");
-        mLastLocation = LocationServices.FusedLocationApi.getLastLocation(
-                mGoogleApiClient);
+        mLastLocation = LocationServices.FusedLocationApi.getLastLocation(mGoogleApiClient);
         if (mLastLocation != null) {
             LatLng latLng = new LatLng(mLastLocation.getLatitude(), mLastLocation.getLongitude());
             CameraUpdate cameraUpdate = CameraUpdateFactory.newLatLngZoom(latLng, 17);
             mMap.animateCamera(cameraUpdate);
-            /*
-            mLatitudeText.setText(String.valueOf(mLastLocation.getLatitude()));
-            mLongitudeText.setText(String.valueOf(mLastLocation.getLongitude()));
-            */
         }
+        addMarkers();
     }
 
     @Override
@@ -120,5 +121,30 @@ public class MapsActivity extends FragmentActivity implements
                 .addOnConnectionFailedListener(this)
                 .addApi(LocationServices.API)
                 .build();
+    }
+
+    private void addMarkers() {
+        InputStream is = getResources().openRawResource(R.raw.pois);
+        BufferedReader reader = new BufferedReader(new InputStreamReader(is));
+        try {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                String[] rowData = line.split(",");
+                String brandName = rowData[0];
+                double lat = Double.parseDouble(rowData[5]);
+                double lng = Double.parseDouble(rowData[6]);
+                mMap.addMarker(new MarkerOptions().position(new LatLng(lat, lng)).title(
+                        brandName));
+            }
+        } catch (IOException ex) {
+            // handle exception
+        } finally {
+            try {
+                is.close();
+            }
+            catch (IOException e) {
+                // handle exception
+            }
+        }
     }
 }
